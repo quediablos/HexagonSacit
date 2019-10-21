@@ -9,13 +9,13 @@ namespace HexagonSacit
        
 
         public Tile[] neighbors; //Neighbor tiles at 30, 90, 150...
-        private Color color;
-        public bool init = false;
+        public Color color;
+        public Controller controller;
+        private Renderer renderer;
 
         void Start()
         {
-            if (init)
-            findNeighbors();
+            renderer = GetComponent<Renderer>();
         }
 
 
@@ -24,12 +24,19 @@ namespace HexagonSacit
 
         }
 
-        /// <summary>
-        /// Creates neighbors
-        /// </summary>
-        private void createNeighbors()
+        private void LateUpdate()
         {
+            renderer.material.color = color;
+        }
 
+        private void OnMouseOver()
+        {
+            controller.updateHighlightedTile(this);
+        }
+
+        private void OnMouseDown()
+        {
+            controller.selectTile(this);
         }
 
         /// <summary>

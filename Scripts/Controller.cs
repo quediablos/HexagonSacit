@@ -11,16 +11,46 @@ namespace HexagonSacit
         
 
         public Tile tilePrototype;
+        public int countTilesHorizontal = 4;
+        public int countTilesVertical = 4;
+        private Tile mouseOver;
+        private Tile tileSelected;
+        private System.Random random = new System.Random();
+        private const float DISTANCE_SELECT_TILE = 1;
 
         void Start()
         {
-            weaveTiles(new Vector2(0, 0), 8, 9);
+            weaveTiles(new Vector2(0, 0), countTilesHorizontal, countTilesVertical);
+            
         }
 
 
         void Update()
         {
 
+        }
+
+        /// <summary>
+        /// Called to update the tile which the mouse is over.
+        /// </summary>
+        public void updateHighlightedTile(Tile tile)
+        {
+            mouseOver = tile;
+        }
+
+        /// <summary>
+        /// Selects the given tile
+        /// </summary>
+        /// <param name="tile"></param>
+        public void selectTile(Tile tile)
+        {
+            //move the old previously selected tile backward.
+            if (tileSelected != null)
+                tileSelected.transform.Translate(0, 0, DISTANCE_SELECT_TILE);
+
+            //move the new selected tile forward.
+            tileSelected = tile;
+            tileSelected.transform.Translate(0, 0, -DISTANCE_SELECT_TILE);
         }
 
         /// <summary>
@@ -36,7 +66,7 @@ namespace HexagonSacit
             //Weave even y tiles
             int countColumnEven = Mathf.CeilToInt(countHorizontal / 2);
 
-            for (int row = 0; row < countVertical; row++)
+            for (int row = 0; row < countVertical -1; row++)
             {
                 y = startingPoint.y + (row * Constants.LENGTH_SIDE_TO_SIDE);
 
@@ -44,7 +74,8 @@ namespace HexagonSacit
                 {
                     x = startingPoint.x + (column * (Constants.LENGTH_EDGE + Constants.LENGTH_VERTEX_TO_VERTEX));
 
-                    Instantiate(tilePrototype, new Vector3(x, y, tilePrototype.transform.position.z), tilePrototype.transform.rotation);
+                    Tile tile = Instantiate(tilePrototype, new Vector3(x, y, tilePrototype.transform.position.z), tilePrototype.transform.rotation);
+                    tile.color = randomTileColor();
                 }
             }
 
@@ -60,9 +91,19 @@ namespace HexagonSacit
                     x = (startingPoint.x + (Constants.LENGTH_VERTEX_TO_VERTEX + Constants.LENGTH_EDGE) / 2) + 
                         ((Constants.LENGTH_EDGE + Constants.LENGTH_VERTEX_TO_VERTEX) * column);
 
-                    Instantiate(tilePrototype, new Vector3(x, y, tilePrototype.transform.position.z), tilePrototype.transform.rotation);
+                    Tile tile = Instantiate(tilePrototype, new Vector3(x, y, tilePrototype.transform.position.z), tilePrototype.transform.rotation);
+                    tile.color = randomTileColor();
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns one of the predefined tile colors.
+        /// </summary>
+        /// <returns></returns>
+        private Color randomTileColor()
+        {
+            return Constants.TILE_COLORS[random.Next(0, 4)];
         }
     }
 }
