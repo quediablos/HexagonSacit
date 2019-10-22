@@ -9,6 +9,27 @@ namespace HexagonSacit
     {
         public const float EQUALITY_MARGIN_FOR_POINTS = 0.01f;
 
+        /// <summary>
+        /// Returns the closest vertex at the given angle.
+        /// </summary>
+        /// <param name="angle"></param>
+        /// <returns>0, 60, 120, ...</returns>
+        public static int closestVertexFromAngle(float angle)
+        {
+            if (angle >= 330 && angle < 30)
+                return 0;
+            else if (angle >= 30 && angle < 90)
+                return 60;
+            else if (angle >= 90 && angle < 150)
+                return 120;
+            else if (angle >= 150 && angle < 210)
+                return 180;
+            else if (angle >= 210 && angle < 270)
+                return 240;
+            else if (angle >= 270 && angle < 330)
+                return 300;
+            else return 0;
+        }
 
         public static Vector2 vector3ToVector2(Vector3 vector)
         {
@@ -55,6 +76,7 @@ namespace HexagonSacit
 
             return angle;
         }
+        
 
         public static bool almostAt(Vector2 p1, Vector2 p2, float distanceThreshold)
         {

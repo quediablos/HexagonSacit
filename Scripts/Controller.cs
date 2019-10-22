@@ -9,12 +9,12 @@ namespace HexagonSacit
     public class Controller : MonoBehaviour
     {
         
-
         public Tile tilePrototype;
         public int countTilesHorizontal = 4;
         public int countTilesVertical = 4;
         private Tile mouseOver;
         private Tile tileSelected;
+        private Trio trioSelected;
         private System.Random random = new System.Random();
         private const float DISTANCE_SELECT_TILE = 1;
 
@@ -39,18 +39,43 @@ namespace HexagonSacit
         }
 
         /// <summary>
-        /// Selects the given tile
+        /// Zooms the given trio either in or out.
+        /// </summary>
+        /// <param name="trio"></param>
+        /// <param name="option">-1 in, 1 out</param>
+        private void zoomTrio(Trio trio, int option)
+        {
+            foreach (Tile tile in trio.tiles)
+            {
+                tile.transform.Translate(0, 0, DISTANCE_SELECT_TILE * option);
+            }
+        }
+
+        /// <summary>
+        /// Selects the most suitable trio
         /// </summary>
         /// <param name="tile"></param>
-        public void selectTile(Tile tile)
+        /// <returns></returns>
+        public Trio selectTrio(Tile tile)
         {
-            //move the old previously selected tile backward.
-            if (tileSelected != null)
-                tileSelected.transform.Translate(0, 0, DISTANCE_SELECT_TILE);
+            //Determine the other tiles depending on the direction of the click.
+            Vector2 mousePos = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -Constants.CAMERA_Z));
+            float angleClick = Geometry.pointDirection(tile.transform.position, mousePos);
 
-            //move the new selected tile forward.
-            tileSelected = tile;
-            tileSelected.transform.Translate(0, 0, -DISTANCE_SELECT_TILE);
+            int closestVertex = Geometry.closestVertexFromAngle(angleClick);
+
+            Trio trio = Trio.create(tile, closestVertex);
+
+            if (trio != null)
+            {
+                if (trioSelected != null)
+                    zoomTrio(trioSelected, 1);
+
+                trioSelected = trio;
+                zoomTrio(trio, -1);
+            }
+
+            return null;
         }
 
         /// <summary>
