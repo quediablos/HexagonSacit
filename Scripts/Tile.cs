@@ -42,9 +42,17 @@ namespace HexagonSacit
         }
 
         /// <summary>
+        /// Replaces the tile, renewing its color
+        /// </summary>
+        public void replace()
+        {
+            color = controller.randomTileColor();
+        }
+
+        /// <summary>
         /// Checks the perimeters and finds the neigbor tiles.
         /// </summary>
-        private void findNeighbors()
+        public void findNeighbors()
         {
             neighbors = new Tile[6];
             for (int angle = 30, i = 0; angle <= 330; angle += 60)
@@ -89,6 +97,33 @@ namespace HexagonSacit
                 return null;
             else
                 return neighbors;
+        }
+
+        /// <summary>
+        /// Checks for tiles as a trio with the same color.
+        /// </summary>
+        /// <returns></returns>
+        public Tile[] checkForMatchingTiles()
+        {
+            foreach (int vertex in Constants.VERTEX_ANGLES)
+            {
+                Tile[] neighbors = getNeighborsAt(vertex);
+
+                if (neighbors == null)
+                    return null;
+
+                if (color.Equals(neighbors[0].color) && color.Equals(neighbors[1].color))
+                {
+                    Tile[] tilesMatching = new Tile[3];
+                    tilesMatching[0] = this;
+                    tilesMatching[1] = neighbors[0];
+                    tilesMatching[2] = neighbors[1];
+
+                    return tilesMatching;
+                }
+            }
+
+            return null;
         }
 
     }

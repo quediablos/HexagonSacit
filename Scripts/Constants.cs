@@ -18,6 +18,8 @@ namespace HexagonSacit
         public static string LAYER_TILE = "LAYER_TILE";
 
         public static float CAMERA_Z = -10;
+
+        public static string NAME_PREFIX_TILE = "tile_";
     }
 }
 

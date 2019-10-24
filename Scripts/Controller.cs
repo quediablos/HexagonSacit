@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace HexagonSacit
 {
@@ -8,26 +9,117 @@ namespace HexagonSacit
     /// </summary>
     public class Controller : MonoBehaviour
     {
-        
+        private const float DISTANCE_SELECT_TILE = 1;
+        private const string TIMER_SIMULATION = "TIMER_SIMULATION";
+        private const float DURATION_ROTATION_STEP = 0.150f;
+
         public Tile tilePrototype;
         public int countTilesHorizontal = 4;
         public int countTilesVertical = 4;
         private Tile mouseOver;
-        private Tile tileSelected;
-        private Trio trioSelected;
+        public Trio trioSelected;
         private System.Random random = new System.Random();
-        private const float DISTANCE_SELECT_TILE = 1;
+        private GameState gameState = GameState.FREE;
+        public TimerVault timerVault = new TimerVault();
+        public AccurateTimer timerSimulation;
+        private int rotationDirection = 1;
+
+        /// <summary>
+        /// Determines which the game is in
+        /// </summary>
+        public enum GameState
+        {
+            FREE,
+            SELECTION,
+            ROTATION
+        }
 
         void Start()
         {
             weaveTiles(new Vector2(0, 0), countTilesHorizontal, countTilesVertical);
-            
+
+            timerSimulation = AccurateTimer.createWithoutLimit().freeze(false);
+            timerVault.add(TIMER_SIMULATION, timerSimulation);
         }
 
 
         void Update()
         {
+            switch (gameState)
+            {
+                case GameState.ROTATION:
+                    maintainRotation();
+                    break;
 
+                case GameState.SELECTION:
+                    checkForRotationInput();
+                    break;
+            }
+        }
+
+        private void LateUpdate()
+        {
+            timerVault.update();
+        }
+
+        private void checkForRotationInput()
+        {
+            if (trioSelected != null)
+            {
+                if (Input.GetKeyUp(KeyCode.RightArrow))
+                {
+                    startRotation(rotationDirection = -1);
+                }
+                else if (Input.GetKeyUp(KeyCode.LeftArrow) && trioSelected != null)
+                {
+                    startRotation(rotationDirection = 1);
+                }
+            }
+        }
+
+        private void checkForMatchingTiles()
+        {
+            //check for matches
+            HashSet<Tile> tilesMatching = trioSelected.checkForMatchingTiles();
+
+            if (tilesMatching != null)
+            {
+                foreach (Tile tileMatching in tilesMatching)
+                {
+                    tileMatching.replace();
+                }
+
+                gameState = GameState.FREE;
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Maintains the rotation of selected trio, rotating it and checking for matches at every step.
+        /// </summary>
+        private void maintainRotation()
+        {
+            if (timerSimulation.isAfter(DURATION_ROTATION_STEP))
+            {
+                trioSelected.rotate(rotationDirection);
+
+                //Rotation finished
+                if (trioSelected.rotationCycle == 0)
+                {
+                    gameState = GameState.SELECTION;
+                }
+
+                //Check for matching tiles
+                checkForMatchingTiles();
+
+                timerSimulation.reset();
+            }
+        }
+
+        private void startRotation(int direction)
+        {
+            timerSimulation.reset();
+            gameState = GameState.ROTATION;
         }
 
         /// <summary>
@@ -73,6 +165,8 @@ namespace HexagonSacit
 
                 trioSelected = trio;
                 zoomTrio(trio, -1);
+
+                gameState = GameState.SELECTION;
             }
 
             return null;
@@ -101,6 +195,7 @@ namespace HexagonSacit
 
                     Tile tile = Instantiate(tilePrototype, new Vector3(x, y, tilePrototype.transform.position.z), tilePrototype.transform.rotation);
                     tile.color = randomTileColor();
+                    tile.name = Constants.NAME_PREFIX_TILE + "even (" + row + column + ")";
                 }
             }
 
@@ -118,6 +213,7 @@ namespace HexagonSacit
 
                     Tile tile = Instantiate(tilePrototype, new Vector3(x, y, tilePrototype.transform.position.z), tilePrototype.transform.rotation);
                     tile.color = randomTileColor();
+                    tile.name = Constants.NAME_PREFIX_TILE + "odd (" + row + column + ")";
                 }
             }
         }
@@ -126,7 +222,7 @@ namespace HexagonSacit
         /// Returns one of the predefined tile colors.
         /// </summary>
         /// <returns></returns>
-        private Color randomTileColor()
+        public Color randomTileColor()
         {
             return Constants.TILE_COLORS[random.Next(0, 4)];
         }
