@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace HexagonSacit
@@ -11,7 +12,7 @@ namespace HexagonSacit
         public Tile[] neighbors; //Neighbor tiles at 30, 90, 150...
         public Color color;
         public Controller controller;
-        private Renderer renderer;
+        public Renderer renderer;
 
         void Start()
         {
@@ -41,12 +42,34 @@ namespace HexagonSacit
             controller.selectTrio(this);
         }
 
+       
+
         /// <summary>
         /// Replaces the tile, renewing its color
         /// </summary>
         public void replace()
         {
-            color = controller.randomTileColor();
+            List<Color> colorsOfNeighbors = new List<Color>(6);
+            List<Color> colorsAvailable = Constants.TILE_COLORS.GetRange(0, controller.numberOfColors);
+            
+            //Pick a color that neigbors don't have.
+            foreach (Tile neighbor in neighbors)
+            {
+                if (neighbor != null)
+                    colorsOfNeighbors.Add(neighbor.color);
+            }
+
+            List<Color> diff = colorsAvailable.Except(colorsOfNeighbors).ToList();
+
+            Color colorNew;
+
+            if (diff.Count > 0)
+                colorNew = diff[0];
+            else
+                colorNew = controller.randomTileColor();
+
+            color = colorNew;
+            
         }
 
         /// <summary>
@@ -110,7 +133,7 @@ namespace HexagonSacit
                 Tile[] neighbors = getNeighborsAt(vertex);
 
                 if (neighbors == null)
-                    return null;
+                    continue;
 
                 if (color.Equals(neighbors[0].color) && color.Equals(neighbors[1].color))
                 {

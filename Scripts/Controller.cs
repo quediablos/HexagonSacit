@@ -12,10 +12,12 @@ namespace HexagonSacit
         private const float DISTANCE_SELECT_TILE = 1;
         private const string TIMER_SIMULATION = "TIMER_SIMULATION";
         private const float DURATION_ROTATION_STEP = 0.150f;
+        private const float DURATION_REPLACEMENT_STEP = 1f;
 
         public Tile tilePrototype;
         public int countTilesHorizontal = 4;
         public int countTilesVertical = 4;
+        public int numberOfColors = 5; 
         private Tile mouseOver;
         public Trio trioSelected;
         private System.Random random = new System.Random();
@@ -23,6 +25,8 @@ namespace HexagonSacit
         public TimerVault timerVault = new TimerVault();
         public AccurateTimer timerSimulation;
         private int rotationDirection = 1;
+        private HashSet<Tile> tilesToReplace;
+        public Color[] tileColors;
 
         /// <summary>
         /// Determines which the game is in
@@ -31,7 +35,8 @@ namespace HexagonSacit
         {
             FREE,
             SELECTION,
-            ROTATION
+            ROTATION,
+            REPLACEMENT
         }
 
         void Start()
@@ -40,6 +45,8 @@ namespace HexagonSacit
 
             timerSimulation = AccurateTimer.createWithoutLimit().freeze(false);
             timerVault.add(TIMER_SIMULATION, timerSimulation);
+
+            numberOfColors = (numberOfColors <= Constants.TILE_COLORS.Count && numberOfColors >= 2) ? numberOfColors : 2;
         }
 
 
@@ -54,6 +61,10 @@ namespace HexagonSacit
                 case GameState.SELECTION:
                     checkForRotationInput();
                     break;
+
+                case GameState.REPLACEMENT:
+                    maintainReplacement();
+                    break;
             }
         }
 
@@ -62,6 +73,16 @@ namespace HexagonSacit
             timerVault.update();
         }
 
+        /// <summary>
+        /// Returns one of the predefined tile colors.
+        /// </summary>
+        /// <returns></returns>
+        public Color randomTileColor()
+        {
+            return Constants.TILE_COLORS[random.Next(0, numberOfColors)];
+            
+        }
+        
         private void checkForRotationInput()
         {
             if (trioSelected != null)
@@ -77,6 +98,8 @@ namespace HexagonSacit
             }
         }
 
+      
+
         private void checkForMatchingTiles()
         {
             //check for matches
@@ -84,14 +107,46 @@ namespace HexagonSacit
 
             if (tilesMatching != null)
             {
-                foreach (Tile tileMatching in tilesMatching)
-                {
-                    tileMatching.replace();
-                }
-
-                gameState = GameState.FREE;
+                tilesToReplace = tilesMatching;
+                
+                gameState = GameState.REPLACEMENT;
                 return;
             }
+        }
+
+        private void maintainReplacement()
+        {
+            
+            if (timerSimulation.isBefore(DURATION_REPLACEMENT_STEP))
+            {
+                foreach (Tile tileToReplace in tilesToReplace)
+                {
+                    Color colorOfTile = tileToReplace.color;
+                    tileToReplace.color = new Color(colorOfTile.r, colorOfTile.g, colorOfTile.b, timerSimulation.time / DURATION_REPLACEMENT_STEP);
+                }               
+            }
+            else
+            {
+                foreach (Tile tileToReplace in tilesToReplace)
+                {
+                    tileToReplace.replace();
+                }
+                
+                finishTileReplacement();
+            }
+            
+        }
+
+        private void startTileReplacement(HashSet<Tile> tilesToReplace)
+        {
+            gameState = GameState.REPLACEMENT;
+            this.tilesToReplace = tilesToReplace;
+            timerSimulation.reset();
+        }
+
+        private void finishTileReplacement()
+        {
+            gameState = GameState.FREE;
         }
 
         /// <summary>
@@ -218,14 +273,7 @@ namespace HexagonSacit
             }
         }
 
-        /// <summary>
-        /// Returns one of the predefined tile colors.
-        /// </summary>
-        /// <returns></returns>
-        public Color randomTileColor()
-        {
-            return Constants.TILE_COLORS[random.Next(0, 4)];
-        }
+        
     }
 }
 
