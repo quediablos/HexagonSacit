@@ -21,20 +21,24 @@ namespace HexagonSacit
         private Tile mouseOver;
         public Trio trioSelected;
         private System.Random random = new System.Random();
-        private GameState gameState = GameState.FREE;
+        public GameState gameState = GameState.SELECTION;
         public TimerVault timerVault = new TimerVault();
         public AccurateTimer timerSimulation;
         private int rotationDirection = 1;
         private HashSet<Tile> tilesToReplace;
         public Color[] tileColors;
+        public int score = 0;
+        private int lastScoreOfBombShowup = 0;
+        private bool createBomb = false;
+        public Vector2 mouseDragStart, mouseDragEnd;
 
         /// <summary>
         /// Determines which the game is in
         /// </summary>
         public enum GameState
         {
-            FREE,
             SELECTION,
+            DRAGGING,
             ROTATION,
             REPLACEMENT
         }
@@ -54,12 +58,16 @@ namespace HexagonSacit
         {
             switch (gameState)
             {
+                case GameState.DRAGGING:
+                    checkForMouseDragEnd();
+                    break;
+
                 case GameState.ROTATION:
                     maintainRotation();
                     break;
 
-                case GameState.SELECTION:
-                    checkForRotationInput();
+                case GameState.SELECTION: 
+                    checkForMouseInput();
                     break;
 
                 case GameState.REPLACEMENT:
@@ -83,19 +91,45 @@ namespace HexagonSacit
             
         }
         
-        private void checkForRotationInput()
+        private void checkForMouseDragEnd()
         {
-            if (trioSelected != null)
+            if (Input.GetKeyUp(KeyCode.Mouse0))
             {
-                if (Input.GetKeyUp(KeyCode.RightArrow))
+                mouseDragEnd = getMousePos();
+
+                if (Geometry.pointDistance(mouseDragStart, mouseDragEnd) >= Constants.MIN_DISTANCE_FOR_DRAGGING)
                 {
-                    startRotation(rotationDirection = -1);
+                    rotationDirection = (mouseDragStart.x > mouseDragEnd.x) ? 1 : -1;
+
+                    gameState = GameState.ROTATION;
                 }
-                else if (Input.GetKeyUp(KeyCode.LeftArrow) && trioSelected != null)
+                else
                 {
-                    startRotation(rotationDirection = 1);
+                    gameState = GameState.SELECTION;
                 }
+               
             }
+        }
+
+        private void checkForMouseInput()
+        {
+            if (Input.GetKeyDown(KeyCode.Mouse0))
+            {
+                mouseDragStart = getMousePos();
+            }
+            else if (Input.GetKeyUp(KeyCode.Mouse0))
+            {
+                mouseDragEnd = getMousePos();
+
+                if (trioSelected != null && Geometry.pointDistance(mouseDragStart, mouseDragEnd) >= Constants.MIN_DISTANCE_FOR_DRAGGING)
+                {
+                    startRotation(mouseDragStart.x > mouseDragEnd.x ? 1 : -1);
+                }
+                else
+                {
+                    selectTrio(mouseOver);
+                }
+            }     
         }
 
       
@@ -108,6 +142,14 @@ namespace HexagonSacit
             if (tilesMatching != null)
             {
                 tilesToReplace = tilesMatching;
+
+                score += tilesMatching.Count * Constants.SCORE_MULTIPLIER;
+
+                if (score - lastScoreOfBombShowup >= Constants.BOMB_SHOWUP_SCORE)
+                {
+                    createBomb = true;
+                    lastScoreOfBombShowup = score;
+                }
                 
                 gameState = GameState.REPLACEMENT;
                 return;
@@ -127,9 +169,21 @@ namespace HexagonSacit
             }
             else
             {
+                //Determine exploding tile
+                int bombInd = 0;
+                int i = 0;
+
+                if (createBomb)
+                {
+                    bombInd = random.Next(0, tilesToReplace.Count);
+                }
+
                 foreach (Tile tileToReplace in tilesToReplace)
                 {
                     tileToReplace.replace();
+
+                    if (createBomb && i++ == bombInd)
+                        tileToReplace.enableBomb(true);
                 }
                 
                 finishTileReplacement();
@@ -146,7 +200,7 @@ namespace HexagonSacit
 
         private void finishTileReplacement()
         {
-            gameState = GameState.FREE;
+            gameState = GameState.SELECTION;
         }
 
         /// <summary>
@@ -206,7 +260,7 @@ namespace HexagonSacit
         public Trio selectTrio(Tile tile)
         {
             //Determine the other tiles depending on the direction of the click.
-            Vector2 mousePos = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -Constants.CAMERA_Z));
+            Vector2 mousePos = getMousePos();
             float angleClick = Geometry.pointDirection(tile.transform.position, mousePos);
 
             int closestVertex = Geometry.closestVertexFromAngle(angleClick);
@@ -225,6 +279,11 @@ namespace HexagonSacit
             }
 
             return null;
+        }
+
+        private Vector2 getMousePos()
+        {
+            return Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -Constants.CAMERA_Z));
         }
 
         /// <summary>

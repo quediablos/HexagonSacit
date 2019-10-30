@@ -7,12 +7,13 @@ namespace HexagonSacit
 {
     public class Tile : MonoBehaviour
     {
-       
 
         public Tile[] neighbors; //Neighbor tiles at 30, 90, 150...
         public Color color;
         public Controller controller;
         public Renderer renderer;
+        public GameObject bombInd;
+        private bool isBomb = false;
 
         void Start()
         {
@@ -24,7 +25,7 @@ namespace HexagonSacit
 
         void Update()
         {
-
+  
         }
 
         private void LateUpdate()
@@ -37,12 +38,27 @@ namespace HexagonSacit
             controller.updateHighlightedTile(this);
         }
 
-        private void OnMouseDown()
+        private void OnMouseUp()
         {
-            controller.selectTrio(this);
+           
+            /*if (Geometry.pointDistance(controller.mouseDragStart, controller.mouseDragEnd) < Constants.MIN_DISTANCE_FOR_DRAGGING)
+            {
+                controller.selectTrio(this);
+            }*/
+            
         }
+        
 
-       
+
+        /// <summary>
+        /// Enables the explosion mechanism.
+        /// </summary>
+        /// <param name="enable"></param>
+        public void enableBomb(bool enable)
+        {
+            isBomb = enable;
+            bombInd.SetActive(enable);
+        }
 
         /// <summary>
         /// Replaces the tile, renewing its color
@@ -69,6 +85,9 @@ namespace HexagonSacit
                 colorNew = controller.randomTileColor();
 
             color = colorNew;
+
+            //Deactivate bomb feature
+            enableBomb(false);
             
         }
 

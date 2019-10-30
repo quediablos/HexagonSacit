@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -23,6 +22,11 @@ namespace HexagonSacit
         public static float CAMERA_Z = -10;
 
         public static string NAME_PREFIX_TILE = "tile_";
+
+        public static int SCORE_MULTIPLIER = 5;
+        public static int BOMB_SHOWUP_SCORE = 20;
+
+        public static float MIN_DISTANCE_FOR_DRAGGING = 3;
 
      
     }
