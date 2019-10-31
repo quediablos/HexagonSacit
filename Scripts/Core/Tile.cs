@@ -37,18 +37,7 @@ namespace HexagonSacit
         {
             controller.updateHighlightedTile(this);
         }
-
-        private void OnMouseUp()
-        {
-           
-            /*if (Geometry.pointDistance(controller.mouseDragStart, controller.mouseDragEnd) < Constants.MIN_DISTANCE_FOR_DRAGGING)
-            {
-                controller.selectTrio(this);
-            }*/
-            
-        }
         
-
 
         /// <summary>
         /// Enables the explosion mechanism.
@@ -166,6 +155,72 @@ namespace HexagonSacit
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Checks if there is any possible match involving the tile itself.
+        /// </summary>
+        /// <returns></returns>
+        public bool checkForPossibleMatchesAround()
+        {
+            //For each neighbor...
+            foreach (int edge in Constants.EDGE_ANGLES)
+            {
+                Tile neighbor = getNeighborAt(edge);
+
+                if (neighbor == null)
+                    continue;
+
+                //The neighbor's color should be the same.
+                if (!neighbor.color.Equals(color))
+                    continue;
+
+                //Now for each common neighbor tile, check if the common neighbor itself or any of 
+                //its neighbors except this tile and its neighbor is the same color.
+
+                //Find common neighbors with the neighbor 
+                Tile neighborCommon0 = getNeighborAt((int)Geometry.angle(edge - 60));
+                Tile neighborCommon1 = getNeighborAt((int)Geometry.angle(edge + 60));
+
+                //One of the common neighbors is the same color.
+                if ((neighborCommon0 != null && neighborCommon0.color.Equals(color)) ||
+                    (neighborCommon1 != null && neighborCommon1.color.Equals(color)))
+                {
+                    return true;
+                }
+                
+                if (neighborCommon0 != null)
+                {
+                    //For each neighbor of common neighbor 0...
+                    foreach (Tile neighborOfNeighborCommon0 in neighborCommon0.neighbors)
+                    {
+                        if (neighborOfNeighborCommon0 != null &&
+                            !neighborOfNeighborCommon0.Equals(this) &&
+                            !neighborOfNeighborCommon0.Equals(neighbor) &&
+                            neighborOfNeighborCommon0.color.Equals(color))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                
+                if (neighborCommon1 != null)
+                {
+                    //For each neighbor of common neighbor 1...
+                    foreach (Tile neighborOfNeighborCommon1 in neighborCommon1.neighbors)
+                    {
+                        if (neighborOfNeighborCommon1 != null &&
+                            !neighborOfNeighborCommon1.Equals(this) &&
+                            !neighborOfNeighborCommon1.Equals(neighbor) &&
+                            neighborOfNeighborCommon1.color.Equals(color))
+                        {
+                            return true;
+                        }
+                    }
+                }   
+            }
+
+            return false;
         }
 
     }

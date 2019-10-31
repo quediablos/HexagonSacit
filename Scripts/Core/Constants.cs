@@ -24,11 +24,18 @@ namespace HexagonSacit
         public static string NAME_PREFIX_TILE = "tile_";
 
         public static int SCORE_MULTIPLIER = 5;
-        public static int BOMB_SHOWUP_SCORE = 20;
+        public static int BOMB_SHOWUP_SCORE = 100;
+        public static int BOMB_CREDIT = 5;
+
+        public static int SCENE_GAME_OVER = 1;
+        public static int SCENE_MAP = 0;
 
         public static float MIN_DISTANCE_FOR_DRAGGING = 3;
 
-     
+        public static string MSG_GAME_OVER_NO_MORE_AVAILABLE_MOVES = "There are no more available moves";
+        public static string MSG_GAME_OVER_BOMB_EXPLODED = "The bomb exploded";
+
+
     }
 }
 
