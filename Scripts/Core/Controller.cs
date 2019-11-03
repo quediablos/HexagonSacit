@@ -13,8 +13,8 @@ namespace HexagonSacit
         private const float DISTANCE_SELECT_TILE = 1;
         private const string TIMER_SIMULATION = "TIMER_SIMULATION";
         private const float DURATION_ROTATION_STEP = 0.150f;
-        private const float TIME_TILE_FADEOUT_FINISH = 1f;
-        private const float TIME_TILE_DROP_FINISH = TIME_TILE_FADEOUT_FINISH + 1f;
+        private const float DURATION_TILE_FADEOUT = 0.5f;
+        private const float DURATION_TILE_DROP = 0.5f;
 
         public Tile tilePrototype;
         public int countTilesHorizontal = 4;
@@ -37,8 +37,8 @@ namespace HexagonSacit
         private int bombCredit = Constants.BOMB_CREDIT;
         private List<Tile> tilesAll;
         private Dictionary<int, List<Tile>> columns = new Dictionary<int, List<Tile>>();
-        private Dictionary<int, List<Color>> nextColors = new Dictionary<int, List<Color>>();
-        private Dictionary<Tile, Color> nextColorsOfTiles;
+        private Dictionary<int, ColumnReplacement> columnReplacements;
+        private ReplacementState replacementState;
 
         /// <summary>
         /// Determines which the game is in
@@ -48,6 +48,14 @@ namespace HexagonSacit
             SELECTION,
             ROTATION,
             REPLACEMENT
+        }
+
+        public enum ReplacementState
+        {
+            FADE_OUT,
+            START,
+            MOVEMENT,
+            COLOR_CHANGE
         }
 
         void Start()
@@ -179,7 +187,7 @@ namespace HexagonSacit
                 //Arrange tiles to drop.
                 arrangeNextColorsOfAffectedColumns(tilesMatching);
 
-                gameState = GameState.REPLACEMENT;
+                startTileReplacement(tilesToReplace);
 
             }
         }
@@ -225,30 +233,29 @@ namespace HexagonSacit
             }
 
 
-            //Assing next colors for each affected tile in each affected sub column.
-            nextColors = new Dictionary<int, List<Color>>();
-            nextColorsOfTiles = new Dictionary<Tile, Color>();
+            //Assing next colors for each affected tile in each affected sub column. 
+            columnReplacements = new Dictionary<int, ColumnReplacement>();
             foreach (KeyValuePair<int, List<Tile>> pair in subColumns)
             {
                 List<Tile> column = pair.Value;
                 int columnNo = pair.Key;
                 int numberOfMatchingTiles = matchingTileNumbersOfColumns[columnNo];
-                nextColors.Add(columnNo, new List<Color>(column.Count));
+                columnReplacements.Add(columnNo, new ColumnReplacement(column, numberOfMatchingTiles));
 
                 for (int i = 0; i < column.Count; i++)
                 {
                     //Get the color above
                     if (i < column.Count - numberOfMatchingTiles)
                     {
-                        nextColors[columnNo].Add(column[i].getNthNeighborAt(90, numberOfMatchingTiles).color);
-                        nextColorsOfTiles.Add(column[i], column[i].getNthNeighborAt(90, numberOfMatchingTiles).color);
+                        columnReplacements[columnNo].nextColors.Add(column[i].getNthNeighborAt(90, numberOfMatchingTiles).color);
                     }
                     //Get a new color (like a new tile dropping into the map)
                     else
                     {
-                        nextColors[columnNo].Add(column[i].arrangeNewColor());
-                        nextColorsOfTiles.Add(column[i], column[i].arrangeNewColor());
+                        columnReplacements[columnNo].nextColors.Add(column[i].arrangeNewColor());
                     }
+
+                    columnReplacements[columnNo].originalPositions.Add(column[i].transform.position);
                 }
             }
           
@@ -260,24 +267,79 @@ namespace HexagonSacit
         private void maintainReplacement()
         {
             //Fade tiles out
-            if (timerSimulation.isBefore(TIME_TILE_FADEOUT_FINISH))
+            if (replacementState.Equals(ReplacementState.FADE_OUT))
             {
-                foreach (Tile tileToReplace in tilesToReplace)
+                if (timerSimulation.isBefore(DURATION_TILE_FADEOUT))
                 {
-                    Color colorOfTile = tileToReplace.color;
-                    tileToReplace.color = new Color(colorOfTile.r, colorOfTile.g, colorOfTile.b, Mathf.Min(TIME_TILE_FADEOUT_FINISH - timerSimulation.time, 1));
-                       
-                }               
+                    foreach (Tile tileToReplace in tilesToReplace)
+                    {
+                        Color colorOfTile = tileToReplace.color;
+                        tileToReplace.color = new Color(colorOfTile.r, colorOfTile.g, colorOfTile.b, Mathf.Min(DURATION_TILE_FADEOUT - timerSimulation.time, 1));
+                    }
+                }
+                else
+                {
+                    replacementState = ReplacementState.START;
+                }
             }
-            //Drop tiles
+            //Move the tiles temporarily for the dropping animation and arrange dropping speeds.
+            else if (replacementState.Equals(ReplacementState.START))
+            {
+                foreach (KeyValuePair<int, ColumnReplacement> pair in columnReplacements)
+                {
+                    ColumnReplacement columnReplacement = pair.Value;
+                    
+                    for (int i = 0; i < columnReplacement.columns.Count; i++)
+                    {
+                        if (i < columnReplacement.numberOfMatchingTiles)
+                        {
+                            float distanceToMoveUpwards = columnReplacement.columns.Count * Constants.LENGTH_SIDE_TO_SIDE;
+                            columnReplacement.columns[i].transform.Translate(new Vector3(0, distanceToMoveUpwards, 0));
+                        }
+
+                        columnReplacement.columns[i].dropSpeed = columnReplacement.numberOfMatchingTiles * Constants.LENGTH_SIDE_TO_SIDE / DURATION_TILE_DROP;
+                    }
+                }
+                
+                replacementState = ReplacementState.MOVEMENT;
+                timerSimulation.reset();
+
+            }
+            //Movement
+            else if (replacementState.Equals(ReplacementState.MOVEMENT))
+            {
+                if (timerSimulation.isBefore(DURATION_TILE_DROP))
+                {
+                    foreach(KeyValuePair < int, ColumnReplacement > pair in columnReplacements)
+                    {
+                        ColumnReplacement columnReplacement = pair.Value;
+
+                        for (int i = 0; i < columnReplacement.columns.Count; i++)
+                        {
+                            columnReplacement.columns[i].transform.Translate(new Vector3(0, -columnReplacement.columns[i].dropSpeed * Time.deltaTime, 0));
+                            
+                        }
+                    }
+                }
+                else
+                {
+                    replacementState = ReplacementState.COLOR_CHANGE;
+                    timerSimulation.reset();
+                }
+               
+            }
+            //Color change
             else
             {
-                foreach (KeyValuePair<Tile, Color> pair in nextColorsOfTiles)
+                foreach (KeyValuePair<int, ColumnReplacement> pair in columnReplacements)
                 {
-                    Color colorNext = pair.Value;
-                    Tile tile = pair.Key;
+                    ColumnReplacement columnReplacement = pair.Value;
 
-                    tile.color = new Color(colorNext.r, colorNext.g, colorNext.b, 1);
+                    for (int i = 0; i < columnReplacement.columns.Count; i++)
+                    {
+                        columnReplacement.columns[i].color = columnReplacement.nextColors[i];
+                        columnReplacement.columns[i].transform.position = columnReplacement.originalPositions[i];
+                    }
                 }
                 
                 finishTileReplacement();
@@ -288,6 +350,7 @@ namespace HexagonSacit
         private void startTileReplacement(HashSet<Tile> tilesToReplace)
         {
             gameState = GameState.REPLACEMENT;
+            replacementState = ReplacementState.FADE_OUT;
             this.tilesToReplace = tilesToReplace;
             timerSimulation.reset();
         }

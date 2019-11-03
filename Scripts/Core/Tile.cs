@@ -15,6 +15,7 @@ namespace HexagonSacit
         public GameObject bombInd;
         private bool isBomb = false;
         public int column;
+        public float dropSpeed;
 
         void Start()
         {
