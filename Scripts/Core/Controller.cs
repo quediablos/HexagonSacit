@@ -13,7 +13,8 @@ namespace HexagonSacit
         private const float DISTANCE_SELECT_TILE = 1;
         private const string TIMER_SIMULATION = "TIMER_SIMULATION";
         private const float DURATION_ROTATION_STEP = 0.150f;
-        private const float DURATION_REPLACEMENT_STEP = 1f;
+        private const float TIME_TILE_FADEOUT_FINISH = 1f;
+        private const float TIME_TILE_DROP_FINISH = TIME_TILE_FADEOUT_FINISH + 1f;
 
         public Tile tilePrototype;
         public int countTilesHorizontal = 4;
@@ -35,6 +36,9 @@ namespace HexagonSacit
         public Vector2 mouseDragStart, mouseDragEnd;
         private int bombCredit = Constants.BOMB_CREDIT;
         private List<Tile> tilesAll;
+        private Dictionary<int, List<Tile>> columns = new Dictionary<int, List<Tile>>();
+        private Dictionary<int, List<Color>> nextColors = new Dictionary<int, List<Color>>();
+        private Dictionary<Tile, Color> nextColorsOfTiles;
 
         /// <summary>
         /// Determines which the game is in
@@ -144,7 +148,7 @@ namespace HexagonSacit
         {
             //check for matches
             HashSet<Tile> tilesMatching = trioSelected.checkForMatchingTiles();
-
+            
             if (tilesMatching != null)
             {
                 //Destroy if there is a bomb among the matching tiles.
@@ -160,7 +164,6 @@ namespace HexagonSacit
                     }
                 }
                 
-
                 tilesToReplace = tilesMatching;
 
                 score += tilesMatching.Count * Constants.SCORE_MULTIPLIER;
@@ -172,10 +175,83 @@ namespace HexagonSacit
                     bombCredit = Constants.BOMB_CREDIT;
                     lastScoreOfBombShowup = score;
                 }
-                
+
+                //Arrange tiles to drop.
+                arrangeNextColorsOfAffectedColumns(tilesMatching);
+
                 gameState = GameState.REPLACEMENT;
-                return;
+
             }
+        }
+
+        /// <summary>
+        /// Arranges the next colors of tiles in the columns which are affected by match.
+        /// <paramref name="tilesMatching"/>
+        /// </summary>
+        private void arrangeNextColorsOfAffectedColumns(HashSet<Tile> tilesMatching)
+        {
+            HashSet<int> columnsAffected = new HashSet<int>();
+            Dictionary<int, List<Tile>> subColumns = new Dictionary<int, List<Tile>>();
+            Dictionary<int, int> matchingTileNumbersOfColumns = new Dictionary<int, int>();
+
+            //Find the list of affected columns.
+            foreach (Tile tile in tilesMatching)
+                columnsAffected.Add(tile.column);
+            
+            //Create the sub columns which start with the matching tiles.
+            foreach (int columnNo in columnsAffected)
+            {
+                Tile tileBottom = null;
+                int matchingTileCount = 0;
+                foreach (Tile tile in columns[columnNo])
+                {
+                    if (tilesMatching.Contains(tile))
+                    {
+                        matchingTileCount++;
+
+                        if (tileBottom == null)
+                            tileBottom = tile;
+                        else if (tile.transform.position.y < tileBottom.transform.position.y)
+                            tileBottom = tile;
+                    }
+                   
+                }
+
+                if (!matchingTileNumbersOfColumns.ContainsKey(columnNo))
+                    matchingTileNumbersOfColumns.Add(columnNo, matchingTileCount);
+
+                int indBottomTile = columns[columnNo].FindIndex(t => t.Equals(tileBottom));
+                subColumns.Add(columnNo, columns[columnNo].GetRange(indBottomTile, columns[columnNo].Count - indBottomTile));
+            }
+
+
+            //Assing next colors for each affected tile in each affected sub column.
+            nextColors = new Dictionary<int, List<Color>>();
+            nextColorsOfTiles = new Dictionary<Tile, Color>();
+            foreach (KeyValuePair<int, List<Tile>> pair in subColumns)
+            {
+                List<Tile> column = pair.Value;
+                int columnNo = pair.Key;
+                int numberOfMatchingTiles = matchingTileNumbersOfColumns[columnNo];
+                nextColors.Add(columnNo, new List<Color>(column.Count));
+
+                for (int i = 0; i < column.Count; i++)
+                {
+                    //Get the color above
+                    if (i < column.Count - numberOfMatchingTiles)
+                    {
+                        nextColors[columnNo].Add(column[i].getNthNeighborAt(90, numberOfMatchingTiles).color);
+                        nextColorsOfTiles.Add(column[i], column[i].getNthNeighborAt(90, numberOfMatchingTiles).color);
+                    }
+                    //Get a new color (like a new tile dropping into the map)
+                    else
+                    {
+                        nextColors[columnNo].Add(column[i].arrangeNewColor());
+                        nextColorsOfTiles.Add(column[i], column[i].arrangeNewColor());
+                    }
+                }
+            }
+          
         }
 
         /// <summary>
@@ -183,37 +259,25 @@ namespace HexagonSacit
         /// </summary>
         private void maintainReplacement()
         {
-            
-            if (timerSimulation.isBefore(DURATION_REPLACEMENT_STEP))
+            //Fade tiles out
+            if (timerSimulation.isBefore(TIME_TILE_FADEOUT_FINISH))
             {
                 foreach (Tile tileToReplace in tilesToReplace)
                 {
                     Color colorOfTile = tileToReplace.color;
-                    tileToReplace.color = new Color(colorOfTile.r, colorOfTile.g, colorOfTile.b, timerSimulation.time / DURATION_REPLACEMENT_STEP);
+                    tileToReplace.color = new Color(colorOfTile.r, colorOfTile.g, colorOfTile.b, Mathf.Min(TIME_TILE_FADEOUT_FINISH - timerSimulation.time, 1));
+                       
                 }               
             }
+            //Drop tiles
             else
             {
-                //Determine the bomb tile
-                int bombInd = 0;
-                int i = 0;
-
-                if (createBomb)
+                foreach (KeyValuePair<Tile, Color> pair in nextColorsOfTiles)
                 {
-                    bombInd = random.Next(0, tilesToReplace.Count);
-                }
+                    Color colorNext = pair.Value;
+                    Tile tile = pair.Key;
 
-                foreach (Tile tileToReplace in tilesToReplace)
-                {
-                    tileToReplace.replace();
-
-                    if (createBomb && i++ == bombInd)
-                    {
-                        tileToReplace.enableBomb(true);
-                        tileBomb = tileToReplace;
-                        createBomb = false;
-                    }
-                        
+                    tile.color = new Color(colorNext.r, colorNext.g, colorNext.b, 1);
                 }
                 
                 finishTileReplacement();
@@ -331,6 +395,14 @@ namespace HexagonSacit
             return Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -Constants.CAMERA_Z));
         }
 
+        private void addTileToColumn(Dictionary<int, List<Tile>> columnMap , Tile tile)
+        {
+            if (!columnMap.ContainsKey(tile.column))
+                columnMap.Add(tile.column, new List<Tile>());
+ 
+            columnMap[tile.column].Add(tile);
+        }
+
         /// <summary>
         /// Weaves tiles according to the given parameters.
         /// </summary>
@@ -356,8 +428,9 @@ namespace HexagonSacit
                     Tile tile = Instantiate(tilePrototype, new Vector3(x, y, tilePrototype.transform.position.z), tilePrototype.transform.rotation);
                     tile.color = randomTileColor();
                     tile.name = Constants.NAME_PREFIX_TILE + "even (" + row + column + ")";
-
+                    tile.column = column * 2;
                     tilesAll.Add(tile);
+                    addTileToColumn(columns, tile);
                 }
             }
 
@@ -376,8 +449,9 @@ namespace HexagonSacit
                     Tile tile = Instantiate(tilePrototype, new Vector3(x, y, tilePrototype.transform.position.z), tilePrototype.transform.rotation);
                     tile.color = randomTileColor();
                     tile.name = Constants.NAME_PREFIX_TILE + "odd (" + row + column + ")";
-
+                    tile.column = column * 2 + 1;
                     tilesAll.Add(tile);
+                    addTileToColumn(columns, tile);
                 }
             }
         }

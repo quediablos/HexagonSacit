@@ -14,6 +14,7 @@ namespace HexagonSacit
         public Renderer renderer;
         public GameObject bombInd;
         private bool isBomb = false;
+        public int column;
 
         void Start()
         {
@@ -54,9 +55,21 @@ namespace HexagonSacit
         /// </summary>
         public void replace()
         {
+            color = arrangeNewColor();
+
+            //Deactivate bomb feature
+            enableBomb(false);  
+        }
+
+        /// <summary>
+        /// Arranges a new suitable color for the tile.
+        /// </summary>
+        /// <returns></returns>
+        public Color arrangeNewColor()
+        {
             List<Color> colorsOfNeighbors = new List<Color>(6);
             List<Color> colorsAvailable = Constants.TILE_COLORS.GetRange(0, controller.numberOfColors);
-            
+
             //Pick a color that neigbors don't have.
             foreach (Tile neighbor in neighbors)
             {
@@ -73,11 +86,7 @@ namespace HexagonSacit
             else
                 colorNew = controller.randomTileColor();
 
-            color = colorNew;
-
-            //Deactivate bomb feature
-            enableBomb(false);
-            
+            return colorNew;
         }
 
         /// <summary>
@@ -110,6 +119,22 @@ namespace HexagonSacit
                 return null;
             else
                 return neighbors[i];
+        }
+
+        /// <summary>
+        /// Returns the nth neighbor tile towards the given edge
+        /// </summary>
+        /// <param name="edge"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Tile getNthNeighborAt(int edge, int count)
+        {
+            Tile neighbor = getNeighborAt(edge);
+
+            if (count == 1 || neighbor == null)
+                return neighbor;
+            else
+                return neighbor.getNthNeighborAt(edge, count - 1);
         }
 
         /// <summary>
