@@ -295,6 +295,7 @@ namespace HexagonSacit
                         {
                             float distanceToMoveUpwards = columnReplacement.columns.Count * Constants.LENGTH_SIDE_TO_SIDE;
                             columnReplacement.columns[i].transform.Translate(new Vector3(0, distanceToMoveUpwards, 0));
+                            columnReplacement.columns[i].GetComponent<MeshRenderer>().enabled = false;
                         }
 
                         columnReplacement.columns[i].dropSpeed = columnReplacement.numberOfMatchingTiles * Constants.LENGTH_SIDE_TO_SIDE / DURATION_TILE_DROP;
@@ -339,6 +340,7 @@ namespace HexagonSacit
                     {
                         columnReplacement.columns[i].color = columnReplacement.nextColors[i];
                         columnReplacement.columns[i].transform.position = columnReplacement.originalPositions[i];
+                        columnReplacement.columns[i].GetComponent<MeshRenderer>().enabled = true;
                     }
                 }
                 
