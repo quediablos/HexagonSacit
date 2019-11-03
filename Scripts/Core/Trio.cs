@@ -97,41 +97,22 @@ namespace HexagonSacit
         {
             rotationCycle = rotationCycle == 2 ? 0 : rotationCycle + 1;
 
-            Vector3 pos0 = tiles[0].transform.position;
-            Vector3 pos1 = tiles[1].transform.position;
-            Vector3 pos2 = tiles[2].transform.position;
-
-            Tile tile0 = tiles[0];
-            Tile tile1 = tiles[1];
-            Tile tile2 = tiles[2];
+            Color color0 = tiles[0].color;
+            Color color1 = tiles[1].color;
+            Color color2 = tiles[2].color;
 
             if (direction == 1)
             {
-                tiles[0].transform.position = pos1;
-                tiles[1].transform.position = pos2;
-                tiles[2].transform.position = pos0;
-
-                tiles[0] = tile2;
-                tiles[2] = tile1;
-                tiles[1] = tile0;
-
+                tiles[0].color = color1;
+                tiles[1].color = color2;
+                tiles[2].color = color0;
             }
             else
             {
-                tiles[0].transform.position = pos2;
-                tiles[1].transform.position = pos0;
-                tiles[2].transform.position = pos1;
+                tiles[0].color = color2;
+                tiles[1].color = color0;
+                tiles[2].color = color1;
 
-                tiles[0] = tile1;
-                tiles[2] = tile0;
-                tiles[1] = tile2;
-            }
-
-            //Update neigbours for each tile in the perimeter.
-            HashSet<Tile> tilesInPerimeter = getTilesInPerimeter();
-            foreach (Tile tile in tilesInPerimeter)
-            {
-                tile.findNeighbors();
             }
         }
 

@@ -27,8 +27,9 @@ namespace HexagonSacit
         public static int BOMB_SHOWUP_SCORE = 100;
         public static int BOMB_CREDIT = 5;
 
-        public static int SCENE_GAME_OVER = 1;
-        public static int SCENE_MAP = 0;
+        public static int SCENE_GAME_OVER = 2;
+        public static int SCENE_MAP = 1;
+        public static int SCENE_MAIN_MENU = 0;
 
         public static float MIN_DISTANCE_FOR_DRAGGING = 3;
 

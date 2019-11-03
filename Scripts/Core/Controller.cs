@@ -271,6 +271,7 @@ namespace HexagonSacit
 
         private void startRotation(int direction)
         {
+            rotationDirection = direction;
             timerSimulation.reset();
             gameState = GameState.ROTATION;
         }
