@@ -341,7 +341,29 @@ namespace HexagonSacit
                         columnReplacement.columns[i].transform.position = columnReplacement.originalPositions[i];
                     }
                 }
-                
+
+                //Determine the bomb tile
+                int bombInd = 0;
+                int k = 0;
+
+                if (createBomb)
+                {
+                    bombInd = random.Next(0, tilesToReplace.Count);
+                }
+
+                foreach (Tile tileToReplace in tilesToReplace)
+                {
+                    tileToReplace.replace();
+
+                    if (createBomb && k++ == bombInd)
+                    {
+                        tileToReplace.enableBomb(true);
+                        tileBomb = tileToReplace;
+                        createBomb = false;
+                    }
+
+                }
+
                 finishTileReplacement();
             }
             
