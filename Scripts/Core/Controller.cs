@@ -295,7 +295,7 @@ namespace HexagonSacit
                         {
                             float distanceToMoveUpwards = columnReplacement.columns.Count * Constants.LENGTH_SIDE_TO_SIDE;
                             columnReplacement.columns[i].transform.Translate(new Vector3(0, distanceToMoveUpwards, 0));
-                            columnReplacement.columns[i].GetComponent<MeshRenderer>().enabled = false;
+                            columnReplacement.columns[i].color = columnReplacement.nextColors[columnReplacement.columns.Count - i - 1];
                         }
 
                         columnReplacement.columns[i].dropSpeed = columnReplacement.numberOfMatchingTiles * Constants.LENGTH_SIDE_TO_SIDE / DURATION_TILE_DROP;
@@ -317,8 +317,7 @@ namespace HexagonSacit
 
                         for (int i = 0; i < columnReplacement.columns.Count; i++)
                         {
-                            columnReplacement.columns[i].transform.Translate(new Vector3(0, -columnReplacement.columns[i].dropSpeed * Time.deltaTime, 0));
-                            
+                            columnReplacement.columns[i].transform.Translate(new Vector3(0, -columnReplacement.columns[i].dropSpeed * Time.deltaTime, 0));                          
                         }
                     }
                 }
@@ -340,7 +339,6 @@ namespace HexagonSacit
                     {
                         columnReplacement.columns[i].color = columnReplacement.nextColors[i];
                         columnReplacement.columns[i].transform.position = columnReplacement.originalPositions[i];
-                        columnReplacement.columns[i].GetComponent<MeshRenderer>().enabled = true;
                     }
                 }
                 
