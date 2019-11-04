@@ -14,7 +14,7 @@ namespace HexagonSacit
         private const string TIMER_SIMULATION = "TIMER_SIMULATION";
         private const float DURATION_ROTATION_STEP = 0.150f;
         private const float DURATION_TILE_FADEOUT = 0.5f;
-        private const float DURATION_TILE_DROP = 0.5f;
+        private const float DURATION_TILE_DROP = 0.8f;
 
         public Tile tilePrototype;
         public int countTilesHorizontal = 4;
@@ -353,8 +353,6 @@ namespace HexagonSacit
 
                 foreach (Tile tileToReplace in tilesToReplace)
                 {
-                    tileToReplace.replace();
-
                     if (createBomb && k++ == bombInd)
                     {
                         tileToReplace.enableBomb(true);
